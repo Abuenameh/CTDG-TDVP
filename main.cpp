@@ -11,6 +11,9 @@
 #include <limits>
 #include <random>
 #include <functional>
+#include <iterator>
+#include <algorithm>
+#include <ctime>
 
 using std::function;
 using std::array;
@@ -453,7 +456,7 @@ int main(int argc, char** argv) {
 //	double dt = lexical_cast<double>(argv[11]);
 
 #ifdef AMAZON
-	path resdir("/home/ubuntu/Dropbox/Amazon EC2/Simulation Results/CTDG HE");
+	path resdir("/home/ubuntu/Dropbox/Amazon EC2/Simulation Results/CTDG TDVP");
 #else
 	path resdir("/Users/Abuenameh/Documents/Simulation Results/CTDG TDVP");
 #endif

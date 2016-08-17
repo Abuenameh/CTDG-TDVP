@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <iostream>
+#include <iterator>
 
 using std::vector;
 using std::cout;
@@ -21,7 +22,7 @@ using thrust::multiplies;
 using thrust::tabulate;
 using thrust::iterator_core_access;
 
-#include <nlopt.hpp>
+//#include <nlopt.hpp>
 
 #include "gutzwiller.hpp"
 #include "groundstate.hpp"

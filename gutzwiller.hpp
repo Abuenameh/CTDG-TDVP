@@ -8,6 +8,8 @@
 #ifndef GUTZWILLER_HPP_
 #define GUTZWILLER_HPP_
 
+#include <cmath>
+
 const int L = 10;
 const int nmax = 7;
 const int N = 2;
