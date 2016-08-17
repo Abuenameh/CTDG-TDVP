@@ -25,7 +25,7 @@ using thrust::device_vector;
 using thrust::host_vector;
 using thrust::complex;
 
-#include <cusolverDn.h>
+//#include <cusolverDn.h>
 
 #include "gutzwiller.hpp"
 
@@ -54,13 +54,17 @@ struct dynamics {
 //			Ndim * Ndim), Vd(Ndim * Ndim), Sd(Ndim), one(
 //			make_cuDoubleComplex(1, 0)), zero(make_cuDoubleComplex(0, 0)), devInfo(
 //			1) {
-		dynamics(cublasHandle_t cublas_handle, cusolverDnHandle_t solver_handle,
+//		dynamics(cublasHandle_t cublas_handle, cusolverDnHandle_t solver_handle,
+//			SystemFunction U0, SiteFunction dU, SiteFunction J, SystemFunction mu, SystemFunction U0p, SiteFunction Jp) :
+//			U0f(U0), dUf(dU), Jf(J), muf(mu), U0pf(U0p), Jpf(Jp), cublas_handle(cublas_handle), solver_handle(
+//				solver_handle), Uh(Ndim * Ndim), Vh(Ndim * Ndim), Sh(Ndim), one(
+//				make_cuDoubleComplex(1, 0)), zero(make_cuDoubleComplex(0, 0)) {
+//		cusolverDnZgesvd_bufferSize(solver_handle, Ndim, Ndim, &work_size);
+////		work = device_vector<cuDoubleComplex>(work_size);
+//	}
+		dynamics(
 			SystemFunction U0, SiteFunction dU, SiteFunction J, SystemFunction mu, SystemFunction U0p, SiteFunction Jp) :
-			U0f(U0), dUf(dU), Jf(J), muf(mu), U0pf(U0p), Jpf(Jp), cublas_handle(cublas_handle), solver_handle(
-				solver_handle), Uh(Ndim * Ndim), Vh(Ndim * Ndim), Sh(Ndim), one(
-				make_cuDoubleComplex(1, 0)), zero(make_cuDoubleComplex(0, 0)) {
-		cusolverDnZgesvd_bufferSize(solver_handle, Ndim, Ndim, &work_size);
-//		work = device_vector<cuDoubleComplex>(work_size);
+			U0f(U0), dUf(dU), Jf(J), muf(mu), U0pf(U0p), Jpf(Jp) {
 	}
 
 	void operator()(const ode_state_type& fcon, ode_state_type& dfdt, const double t);
@@ -68,15 +72,15 @@ struct dynamics {
 private:
 	SystemFunction U0f, muf, U0pf;
 	SiteFunction dUf, Jf, Jpf;
-	cublasHandle_t cublas_handle;
-	cusolverDnHandle_t solver_handle;
-	host_vector<cuDoubleComplex> Uh, Vh;
-	host_vector<double> Sh;
+//	cublasHandle_t cublas_handle;
+//	cusolverDnHandle_t solver_handle;
+//	host_vector<cuDoubleComplex> Uh, Vh;
+//	host_vector<double> Sh;
 //	device_vector<cuDoubleComplex> Ud, Vd;
 //	device_vector<double> Sd;
-	int work_size;
+//	int work_size;
 //	device_vector<cuDoubleComplex> work;
-	cuDoubleComplex one, zero;
+//	cuDoubleComplex one, zero;
 //	device_vector<int> devInfo;
 };
 
