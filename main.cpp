@@ -700,6 +700,7 @@ int main(int argc, char** argv) {
 //		cout << "Ediff% = " << ::math((Ei[0]-Ei[1])/Ei[0]) << endl;
 //		cout << ::math(Q) << endl;
 
+		cout << "Here 1" << endl;
 		vector<double> p(N);
 		vector<vector<complex<double>>> b0(N), bf(N);
 		for (int j = 0; j < N; j++) {
@@ -732,20 +733,26 @@ int main(int argc, char** argv) {
 			}
 			p[j] /= L;
 			ps[j].push_back(p[j]);
+			cout << "Here 2" << endl;
 			for (int i = 0; i < L; i++) {
 				b0[j].push_back(b(f0c, i, J0, U00));
 				bf[j].push_back(b(ffc, i, Jf, U0f));
 			}
+			cout << "Here 3" << endl;
 			b0s[j].push_back(b0[j]);
 			bfs[j].push_back(bf[j]);
+			cout << "Here 4" << endl;
 			f0s[j].push_back(f0c);
 			ffs[j].push_back(ffc);
 		}
 
 	}
 
+	cout << "Here 5" << endl;
 	cusolverDnDestroy(solver_handle);
+	cout << "Here 6" << endl;
 	cublasDestroy(cublas_handle);
+	cout << "Here 7" << endl;
 
 	printMath(os, "taures", resi, taus);
 	printMath(os, "Eires", resi, Eis);
