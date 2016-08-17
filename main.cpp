@@ -73,15 +73,15 @@ using namespace boost::numeric::odeint;
 
 #define EIGEN_DONT_VECTORIZE
 
-#include <cppoptlib/solver/lbfgssolver.h>
+//#include <cppoptlib/solver/lbfgssolver.h>
+//
+//using cppoptlib::LbfgsSolver;
+//using cppoptlib::Criteria;
 
-using cppoptlib::LbfgsSolver;
-using cppoptlib::Criteria;
-
-#include <nlopt.hpp>
-
-using nlopt::opt;
-using nlopt::algorithm;
+//#include <nlopt.hpp>
+//
+//using nlopt::opt;
+//using nlopt::algorithm;
 
 #include <dlib/optimization.h>
 
