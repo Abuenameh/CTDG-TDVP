@@ -26,9 +26,12 @@ public:
 
     void Progressed(unsigned long idx_);
 
+    void operator++() { Progressed(idx+1); }
+
 private:
 	
     unsigned long n;
+    unsigned long idx;
     unsigned int desc_width;
     unsigned long frequency_update;
     std::ostream* out;

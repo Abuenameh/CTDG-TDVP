@@ -8,16 +8,27 @@
 #include <iostream>
 #include <limits>
 #include <iterator>
+#include <iomanip>
+#include <fstream>
 
 using std::cout;
 using std::endl;
 using std::ostream_iterator;
 using std::numeric_limits;
+using std::ostream;
+using std::ostringstream;
+using std::setprecision;
+using std::ofstream;
+
+#include <boost/algorithm/string.hpp>
+
+using boost::algorithm::replace_all_copy;
 
 #include <thrust/functional.h>
 #include <thrust/tabulate.h>
 #include <thrust/extrema.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/count.h>
 
 using thrust::counting_iterator;
 using thrust::iterator_adaptor;
@@ -29,30 +40,47 @@ using thrust::divides;
 using thrust::minus;
 using thrust::tabulate;
 using thrust::max_element;
-
-//#include <armadillo>
-//
-//using arma::cx_vec;
-//using arma::cx_mat;
+using thrust::plus;
 
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
+#include <Eigen/SPQRSupport>
+#include <Eigen/SparseQR>
+#include <Eigen/OrderingMethods>
 
 using Eigen::MatrixXcd;
 using Eigen::VectorXcd;
 using Eigen::ComputeThinU;
 using Eigen::ComputeThinV;
+using Eigen::CompleteOrthogonalDecomposition;
+using Eigen::BDCSVD;
+using Eigen::SparseMatrix;
+using Eigen::SPQR;
+using Eigen::VectorXi;
+using Eigen::SparseQR;
+using Eigen::COLAMDOrdering;
+using Eigen::AMDOrdering;
+using Eigen::NaturalOrdering;
+using Eigen::Lower;
+using Eigen::Matrix;
+using Eigen::ComputeFullU;
+using Eigen::ComputeFullV;
 
 #include "gutzwiller.hpp"
 #include "dynamics.hpp"
+
+typedef Matrix<std::complex<double>, nmax + 1, nmax + 1> GramMatrix;
+typedef Matrix<std::complex<double>, nmax + 1, 1> SiteVector;
 
 extern void hamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 	const double_vector& dU, const double_vector& J, const double_vector& mu,
 	complex_vector& norm1, complex_vector& norm2, complex_vector& norm3,
 	state_type& H);
 
-extern void dynamicshamiltonian(state_type& fc, state_type& f, const double_vector& U0,
-	const double_vector& dU, const double_vector& J, const double_vector& mu,
-	complex_vector& norm1, complex_vector& norm2, complex_vector& norm3, const double_vector U0p, const double_vector& Jp,
+extern void dynamicshamiltonian(state_type& fc, state_type& f,
+	const double_vector& U0, const double_vector& dU, const double_vector& J,
+	const double_vector& mu, complex_vector& norm1, complex_vector& norm2,
+	complex_vector& norm3, const double_vector U0p, const double_vector& Jp,
 	state_type& H);
 
 template<typename Iterator>
@@ -193,6 +221,62 @@ struct conjop {
 	}
 };
 
+template<typename T>
+class mathematic {
+public:
+
+	mathematic(T& v_) :
+		v(v_) {
+	}
+
+	T& v;
+};
+
+template<>
+class mathematic<double> {
+public:
+
+	mathematic(double d_) :
+		d(d_) {
+	}
+
+	double d;
+};
+
+template<>
+class mathematic<std::complex<double> > {
+public:
+
+	mathematic(std::complex<double> c_) :
+		c(c_) {
+	}
+
+	std::complex<double> c;
+};
+
+mathematic<double> mathe(double d) {
+	return mathematic<double>(d);
+}
+
+mathematic<std::complex<double> > mathe(std::complex<double> c) {
+	return mathematic<std::complex<double> >(c);
+}
+
+ostream& operator<<(ostream& out, const mathematic<double> m) {
+	double d = m.d;
+	ostringstream oss;
+	oss << setprecision(numeric_limits<double>::digits10) << d;
+	out << replace_all_copy(oss.str(), "e", "*^");
+	return out;
+}
+
+ostream& operator<<(ostream& out, const mathematic<std::complex<double> > m) {
+	std::complex<double> c = m.c;
+	out << "(" << mathematic<double>(c.real()) << ")+I("
+		<< mathematic<double>(c.imag()) << ")";
+	return out;
+}
+
 void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	const double t) {
 
@@ -256,7 +340,6 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	}
 
 	state_type fc = fc0;
-//	fc = fc0;
 
 	state_type H(N);
 
@@ -302,69 +385,15 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 						/ dnormi[k * L + mod(j + 2)];
 				}
 			}
-			dynamicshamiltonian(fc, f, U0, dU, J, mu, dnorm1, dnorm2, dnorm3, U0p, Jp, H);
+			dynamicshamiltonian(fc, f, U0, dU, J, mu, dnorm1, dnorm2, dnorm3,
+				U0p, Jp, H);
 			strided_range<state_type::iterator> stride(dH.begin() + in(i, n),
 				dH.end(), L * (nmax + 1));
 			copy(H.begin(), H.end(), stride.begin());
 		}
 	}
-//	for (int i = 0; i < L; i++) {
-//		for (int n = 0; n <= nmax; n++) {
-//			fc = fc0;
-//			for (int j = 0; j < N; j++) {
-//				tabulate(fc.begin() + j * L * (nmax + 1) + i * (nmax + 1),
-//					fc.begin() + j * L * (nmax + 1) + (i + 1) * (nmax + 1),
-//					diff<double>(n));
-//			}
-//			transform(fc.begin(), fc.end(), f.begin(), dHnorms.begin(),
-//				multiplies<complex<double>>());
-//			reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), dHnorms.begin(),
-//				okeys.begin(), dHnormi.begin());
-//			reduce_by_key(Lkeys.begin(), Lkeys.end(), dHnormi.begin(),
-//				okeys.begin(), dHnorm0.begin(), equal_to<int>(),
-//				multiplies<complex<double>>());
-//			for (int k = 0; k < L; k++) {
-//				for (int l = 0; l < N; l++) {
-//					dHnorm1[l * L + k] = dHnorm0[l] / dHnormi[l * L + k];
-//					dHnorm2[l * L + k] = dHnorm1[l * L + k]
-//						/ dHnormi[l * L + mod(k + 1)];
-//					dHnorm3[l * L + k] = dHnorm2[l * L + k]
-//						/ dHnormi[l * L + mod(k + 2)];
-//				}
-//			}
-//			hamiltonian(fc, f, U0, dU, J, mu, dHnorm1, dHnorm2, norm3, H);
-//			cout << H[0] << endl;
-//			exit(0);
-//			strided_range<state_type::iterator> stride(dH.begin() + in(i, n),
-//				dH.end(), L * (nmax + 1));
-//			copy(H.begin(), H.end(), stride.begin());
-//		}
-//	}
-
-//	transform(fc0.begin(), fc0.end(), f.begin(), norms.begin(),
-//		multiplies<complex<double>>());
-//
-//	reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), norms.begin(),
-//		okeys.begin(), normi.begin());
-//
-//	reduce_by_key(Lkeys.begin(), Lkeys.begin() + N * L, normi.begin(),
-//		okeys.begin(), norm0.begin(), equal_to<int>(),
-//		multiplies<complex<double>>());
-//
-//	for (int i = 0; i < L; i++) {
-//		for (int j = 0; j < N; j++) {
-//			norm1[j * L + i] = norm0[j] / normi[j * L + i];
-//			norm2[j * L + i] = norm1[j * L + i] / normi[j * L + mod(i + 1)];
-//			norm3[j * L + i] = norm2[j * L + i] / normi[j * L + mod(i + 2)];
-//		}
-//	}
-
 
 	auto norm1rep = make_repeat_iterator(norm1.begin(), nmax + 1);
-
-//	state_type covariant(Ndim);
-//	transform(f.begin(), f.end(), norm1rep, covariant.begin(),
-//		multiplies<complex<double>>());
 
 	auto norm0rep = make_repeat_iterator(norm0.begin(), L * (nmax + 1));
 
@@ -394,167 +423,60 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	host_vector<complex<double>> norm0h = norm0;
 	host_vector<complex<double>> norm1h = norm1;
 	host_vector<complex<double>> normih = normi;
-//	host_vector<complex<double>> covarianth = covariant;
 
-//	complex_vector dnorms(Ndim);
-//	complex_vector dnormi(N * L);
-//	complex_vector dnorm0(N);
-//	complex_vector covariant(Ndim);
-//	for (int i = 0; i < L; i++) {
-//		for (int n = 0; n <= nmax; n++) {
-//			f = f0;
-//			fc = fc0;
-//			for (int k = 0; k < N; k++) {
-//				tabulate(fc.begin() + k * L * (nmax + 1) + i * (nmax + 1),
-//					fc.begin() + k * L * (nmax + 1) + (i + 1) * (nmax + 1),
-//					diff<double>(n));
-//			}
-//			transform(fc.begin(), fc.end(), f.begin(), dnorms.begin(),
-//				multiplies<complex<double>>());
-//			reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), dnorms.begin(),
-//				okeys.begin(), dnormi.begin());
-//			reduce_by_key(Lkeys.begin(), Lkeys.end(), dnormi.begin(),
-//				okeys.begin(), dnorm0.begin(), equal_to<int>(),
-//				multiplies<complex<double>>());
-//			for (int k = 0; k < N; k++) {
-//				covariant(in(k, i, n)) = dnorm0[k];
-//			}
-//
-//		}
-//	}
-
-
+	host_vector<complex<double>> covarianth = covariant;
 	complex_vector ddnorms(Ndim);
 	complex_vector ddnormi(N * L);
 	complex_vector ddnorm0(N);
-//	cx_mat gram(Ndim, Ndim);
-//	cx_mat Gij(Ndim, Ndim);
-	MatrixXcd gram(Ndim, Ndim);
-	MatrixXcd Gij(Ndim, Ndim);
+	MatrixXcd Gij = MatrixXcd::Zero(Ndim, Ndim);
+//	SparseMatrix<std::complex<double>> Gij(Ndim, Ndim);
+//	Gij.reserve(VectorXi::Constant(Ndim, nmax+1));
 //	for (int k = 0; k < N; k++) {
-		for (int i = 0; i < L; i++) {
-			for (int n = 0; n <= nmax; n++) {
-				for (int j = 0; j < L; j++) {
-					for (int m = 0; m <= nmax; m++) {
-						fc = fc0;
-						for (int k = 0; k < N; k++) {
-							tabulate(fc.begin() + k * L * (nmax + 1) + i * (nmax + 1),
-								fc.begin() + k * L * (nmax + 1) + (i + 1) * (nmax + 1),
-								diff<double>(n));
-						}
-						f = f0;
-						for (int k = 0; k < N; k++) {
-							tabulate(f.begin() + k * L * (nmax + 1) + j * (nmax + 1),
-								f.begin() + k * L * (nmax + 1) + (j + 1) * (nmax + 1),
-								diff<double>(m));
-						}
-						transform(fc.begin(), fc.end(), f.begin(), ddnorms.begin(),
-							multiplies<complex<double>>());
-						reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), ddnorms.begin(),
-							okeys.begin(), ddnormi.begin());
-						reduce_by_key(Lkeys.begin(), Lkeys.end(), ddnormi.begin(),
-							okeys.begin(), ddnorm0.begin(), equal_to<int>(),
-							multiplies<complex<double>>());
-						for (int k = 0; k < N; k++) {
-							gram(in(k, i, n), in(k, j, m)) = ddnorm0[k];
-						}
-					}
+	for (int i = 0; i < L; i++) {
+		for (int n = 0; n <= nmax; n++) {
+			for (int m = 0; m <= nmax; m++) {
+				fc = fc0;
+				for (int k = 0; k < N; k++) {
+					tabulate(fc.begin() + k * L * (nmax + 1) + i * (nmax + 1),
+						fc.begin() + k * L * (nmax + 1) + (i + 1) * (nmax + 1),
+						diff<double>(n));
 				}
-			}
-		}
-
-		host_vector<complex<double>> covarianth = covariant;
-			for (int k = 0; k < N; k++) {
-		for (int i = 0; i < L; i++) {
-			for (int n = 0; n <= nmax; n++) {
-				for (int j = 0; j < L; j++) {
-					for (int m = 0; m <= nmax; m++) {
-						complex<double> gij = complex<double>(0, 1)
-							* (complex<double>(gram(in(k, i, n), in(k, j, m)))
-								/ norm0h[k]
-								- covarianth[in(k, i, n)]
-									* conj(covarianth[in(k, j, m)])
-									/ (norm0[k] * norm0[k]));
-						Gij(in(k, i, n), in(k, j, m)) = gij;
-						Gij(in(k, i, n), in(k, j, m)) = gram(in(k, i, n), in(k, j, m));
-						Gij(in(k, i, n), in(k, j, m)) = gram(in(k,i,n),in(k,j,m))/std::complex<double>(norm0h[k]) - std::complex<double>(covarianth[in(k, i, n)]
-						             									* conj(covarianth[in(k, j, m)])
-						             									/ (norm0h[k] * norm0h[k]));
-//						Gijh(in(k, i, n), in(k, j, m)) =
-//							make_cuDoubleComplex(gij.real(), gij.imag());
-					}
+				f = f0;
+				for (int k = 0; k < N; k++) {
+					tabulate(f.begin() + k * L * (nmax + 1) + i * (nmax + 1),
+						f.begin() + k * L * (nmax + 1) + (i + 1) * (nmax + 1),
+						diff<double>(m));
+				}
+				transform(fc.begin(), fc.end(), f.begin(), ddnorms.begin(),
+					multiplies<complex<double>>());
+				reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), ddnorms.begin(),
+					okeys.begin(), ddnormi.begin());
+				reduce_by_key(Lkeys.begin(), Lkeys.end(), ddnormi.begin(),
+					okeys.begin(), ddnorm0.begin(), equal_to<int>(),
+					multiplies<complex<double>>());
+				for (int k = 0; k < N; k++) {
+					Gij(in(k, i, n), in(k, i, m)) = std::complex<double>(
+						ddnorm0[k] / norm0h[k]
+							- covarianth[in(k, i, n)]
+								* conj(covarianth[in(k, i, m)])
+								/ (norm0h[k] * norm0h[k]));
+//							Gij.insert(in(k, i, n), in(k, i, m)) = std::complex<double>(1, 0)*(std::complex<double>(ddnorm0[k]/norm0h[k]/*) - std::complex<double>(*/-covarianth[in(k, i, n)]
+//							             									* conj(covarianth[in(k, i, m)])
+//							             									/ (norm0h[k] * norm0h[k])));
 				}
 			}
 		}
 	}
-//			for(int i = 0; i < Ndim; i++) {
-//				cout << Hih[i] << ",";
-//			}
-//			cout << endl;
-//			exit(0);
+//		Gij.makeCompressed();
 
-	/*
-	 device_vector<cuDoubleComplex> Gij = Gijh;
-
-	 cusolverDnZgesvd(solver_handle, 'A', 'A', Ndim, Ndim,
-	 raw_pointer_cast(Gij.data()), Ndim, raw_pointer_cast(Sd.data()),
-	 raw_pointer_cast(Ud.data()), Ndim, raw_pointer_cast(Vd.data()), Ndim,
-	 raw_pointer_cast(work.data()), work_size, NULL,
-	 raw_pointer_cast(devInfo.data()));
-
-	 host_vector<double> Sh = Sd;
-	 host_vector<cuDoubleComplex> Spinvh(Ndim * Ndim,
-	 make_cuDoubleComplex(0, 0));
-	 for (int i = 0; i < Ndim; i++) {
-	 if (fabs(Sh[i])
-	 > numeric_limits<double>::epsilon() * Ndim
-	 * *max_element(Sh.begin(), Sh.end())) {
-	 Spinvh[i * Ndim + i] = make_cuDoubleComplex(1 / Sh[i], 0);
-	 } else {
-	 Spinvh[i * Ndim + i] = make_cuDoubleComplex(Sh[i], 0);
-	 }
-	 }
-
-	 device_vector<cuDoubleComplex> Spinvd = Spinvh;
-
-	 device_vector<cuDoubleComplex> VSd(Ndim * Ndim);
-	 cublasZgemm(cublas_handle, CUBLAS_OP_C, CUBLAS_OP_N, Ndim, Ndim, Ndim, &one,
-	 raw_pointer_cast(Vd.data()), Ndim, raw_pointer_cast(Spinvd.data()),
-	 Ndim, &zero, raw_pointer_cast(VSd.data()), Ndim);
-
-	 device_vector<cuDoubleComplex> Gijpinv(Ndim * Ndim);
-	 cublasZgemm(cublas_handle, CUBLAS_OP_N, CUBLAS_OP_C, Ndim, Ndim, Ndim, &one,
-	 raw_pointer_cast(VSd.data()), Ndim, raw_pointer_cast(Ud.data()), Ndim,
-	 &zero, raw_pointer_cast(Gijpinv.data()), Ndim);
-	 host_vector<cuDoubleComplex> Gijpinvh = Gijpinv;
-
-	 device_vector<complex<double>> dfdtd(Ndim);
-
-	 device_vector<complex<double>> Hid = Hi;
-	 cublasZgemv(cublas_handle, CUBLAS_OP_T, Ndim, Ndim, &one,
-	 raw_pointer_cast(Gijpinv.data()), Ndim,
-	 reinterpret_cast<cuDoubleComplex*>(raw_pointer_cast(Hid.data())), 1,
-	 &zero,
-	 reinterpret_cast<cuDoubleComplex*>(raw_pointer_cast(dfdtd.data())), 1);
-
-	 thrust::copy(dfdtd.begin(), dfdtd.end(), dfdt.begin());
-	 */
-
-//	cx_mat Gijpinv = pinv(Gij);
-//	cx_vec Hiv(Ndim);
-			Gij *= std::complex<double>(0, 1);
 	VectorXcd Hiv(Ndim);
 	for (int i = 0; i < Ndim; i++) {
 		Hiv[i] = Hih[i];
 	}
-//	thrust::copy(Hih.begin(), Hih.end(), Hiv.begin());
-	VectorXcd dfdtv = Gij.jacobiSvd(ComputeThinU | ComputeThinV).solve(Hiv);
-//	VectorXcd dfdtv = Gij.fullPivHouseholderQr().solve(Hiv);
-	//	thrust::copy(dH.begin(), dH.end(), Hiv.begin());
-//	cx_vec dfdtv = std::complex<double>(0,-1)*Gijpinv * Hiv;
-	for (int i = 0; i < Ndim; i++) {
-		dfdt[i] = dfdtv[i];
-	}
-//	thrust::copy(dfdtv.begin(), dfdtv.end(), dfdt.begin());
-}
 
+	VectorXcd dfdtv = Gij.completeOrthogonalDecomposition().solve(Hiv);
+
+	for (int i = 0; i < Ndim; i++) {
+		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
+	}
+}

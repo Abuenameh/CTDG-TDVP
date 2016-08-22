@@ -12,7 +12,7 @@
 
 const int L = 10;
 const int nmax = 7;
-const int N = 2;
+const int N = 1;
 
 const int Ndim = N * L * (nmax + 1);
 

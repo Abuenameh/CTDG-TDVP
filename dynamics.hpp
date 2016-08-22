@@ -25,6 +25,13 @@ using thrust::device_vector;
 using thrust::host_vector;
 using thrust::complex;
 
+//#include <Eigen/Sparse>
+//#include <Eigen/SparseQR>
+//
+//using Eigen::SparseMatrix;
+//using Eigen::SparseQR;
+//using Eigen::COLAMDOrdering;
+
 //#include <cusolverDn.h>
 
 #include "gutzwiller.hpp"
@@ -65,13 +72,22 @@ struct dynamics {
 		dynamics(
 			SystemFunction U0, SiteFunction dU, SiteFunction J, SystemFunction mu, SystemFunction U0p, SiteFunction Jp) :
 			U0f(U0), dUf(dU), Jf(J), muf(mu), U0pf(U0p), Jpf(Jp) {
+//			solver = new SparseQR<SparseMatrix<std::complex<double>>, COLAMDOrdering<int>>();
+//			analyzePattern();
 	}
+
+		~dynamics() {
+//			delete solver;
+		}
+
+		void analyzePattern();
 
 	void operator()(const ode_state_type& fcon, ode_state_type& dfdt, const double t);
 
 private:
 	SystemFunction U0f, muf, U0pf;
 	SiteFunction dUf, Jf, Jpf;
+//	SparseQR<SparseMatrix<std::complex<double>>, COLAMDOrdering<int>>* solver;
 //	cublasHandle_t cublas_handle;
 //	cusolverDnHandle_t solver_handle;
 //	host_vector<cuDoubleComplex> Uh, Vh;

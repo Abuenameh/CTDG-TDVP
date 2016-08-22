@@ -5,6 +5,7 @@ ProgressBar::ProgressBar() {}
 ProgressBar::ProgressBar(unsigned long n_, const char* description_, std::ostream& out_){
     
     n = n_;
+    idx = 0;
     frequency_update = n_;
     description = description_;
     out = &out_;
@@ -95,6 +96,8 @@ void ProgressBar::Progressed(unsigned long idx_)
         }
 
         *out << "]" << std::setw(CHARACTER_WIDTH_PERCENTAGE + 1) << std::setprecision(1) << std::fixed << progress_percent << "%\r" << std::flush;
+
+        idx = idx_;
     }
     catch(unsigned long e){
         ClearBarField();
