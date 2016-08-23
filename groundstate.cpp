@@ -460,7 +460,6 @@ double energy::value(const vector<double>& x) {
 	double_vector U0p(1, 0), Jp(L, 0);
 	hamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
 
-	cout << norm0[0] << endl;
 	return H[0].real() / norm0[0].real();
 }
 
