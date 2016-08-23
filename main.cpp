@@ -103,6 +103,11 @@ using dlib::derivative;
 using dlib::find_min_trust_region;
 using dlib::gradient_norm_stop_strategy;
 
+#include <nlopt.hpp>
+
+using nlopt::opt;
+using nlopt::algorithm;
+
 #include "gutzwiller.hpp"
 #include "dynamics.hpp"
 #include "mathematica.hpp"
@@ -746,11 +751,26 @@ int main(int argc, char** argv) {
 //		find_min(lbfgs_search_strategy(10),
 //			objective_delta_stop_strategy(1e-12), objbind, gradbind, f0jd,
 //			-1e12);
-		dlib::find_min_using_approximate_derivatives(lbfgs_search_strategy(10),
-			objective_delta_stop_strategy(1e-12), objbind, f0jd,
-			-1e12, 1e-16);
+//		dlib::find_min_using_approximate_derivatives(lbfgs_search_strategy(10),
+//			objective_delta_stop_strategy(1e-12), objbind, f0jd,
+//			-1e12, 1e-16);
 
 		copy(f0jd.begin(), f0jd.end(), f0j.begin());
+
+				opt lopt(algorithm::LD_LBFGS, 2 * L * (nmax + 1));
+				lopt.set_min_objective(objective, &en[j]);
+				lopt.set_lower_bounds(-1);
+				lopt.set_upper_bounds(1);
+				lopt.set_ftol_rel(1e-16);
+				lopt.set_ftol_abs(1e-16);
+
+				double E0j = 0;
+				try {
+					lopt.optimize(f0j, E0j);
+				} catch (std::exception& e) {
+					cerr << e.what() << endl;
+					exit(1);
+				}
 
 //		array<double, L> norm0i;
 		for (int i = 0; i < L; i++) {
