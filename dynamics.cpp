@@ -44,8 +44,8 @@ using thrust::plus;
 
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <Eigen/SPQRSupport>
-#include <Eigen/SparseQR>
+//#include <Eigen/SPQRSupport>
+//#include <Eigen/SparseQR>
 #include <Eigen/OrderingMethods>
 
 using Eigen::MatrixXcd;
