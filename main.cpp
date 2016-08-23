@@ -419,6 +419,8 @@ public:
 	}
 
 	double objective(const column_vector& x) const {
+//		thrust::copy(x.begin(), x.end(), ostream_iterator<double>(cout,","));
+//		cout << endl;
 		const vector<double> xv(x.begin(), x.end());
 		return en.value(xv);
 	}
@@ -715,6 +717,22 @@ int main(int argc, char** argv) {
 		function<double()> rnd = bind(uni, rng);
 		generate(f0j.begin(), f0j.end(), rnd);
 
+		array<double, L> norm0i;
+		for (int i = 0; i < L; i++) {
+			norm0i[i] = 0;
+			for (int n = 0; n <= nmax; n++) {
+				norm0i[i] += pow(f0j[2 * (i * (nmax + 1) + n)], 2)
+					+ pow(f0j[2 * (i * (nmax + 1) + n) + 1], 2);
+			}
+		}
+
+		for (int i = 0; i < L; i++) {
+			for (int n = 0; n <= nmax; n++) {
+				f0j[2 * (i * (nmax + 1) + n)] /= sqrt(norm0i[i]);
+				f0j[2 * (i * (nmax + 1) + n) + 1] /= sqrt(norm0i[i]);
+			}
+		}
+
 		column_vector f0jd(2 * L * (nmax + 1));
 		copy(f0j.begin(), f0j.end(), f0jd.begin());
 
@@ -725,13 +743,16 @@ int main(int argc, char** argv) {
 			std::placeholders::_1);
 		auto hessbind = bind(&energy_model::hessian, &mod,
 			std::placeholders::_1);
-		find_min(lbfgs_search_strategy(10),
-			objective_delta_stop_strategy(1e-12), objbind, gradbind, f0jd,
-			-1e12);
+//		find_min(lbfgs_search_strategy(10),
+//			objective_delta_stop_strategy(1e-12), objbind, gradbind, f0jd,
+//			-1e12);
+		dlib::find_min_using_approximate_derivatives(lbfgs_search_strategy(10),
+			objective_delta_stop_strategy(1e-12), objbind, f0jd,
+			-1e12, 1e-16);
 
 		copy(f0jd.begin(), f0jd.end(), f0j.begin());
 
-		array<double, L> norm0i;
+//		array<double, L> norm0i;
 		for (int i = 0; i < L; i++) {
 			norm0i[i] = 0;
 			for (int n = 0; n <= nmax; n++) {
