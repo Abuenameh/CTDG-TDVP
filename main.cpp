@@ -769,8 +769,8 @@ int main(int argc, char** argv) {
 				lopt.set_min_objective(objective, &en[j]);
 				lopt.set_lower_bounds(-1);
 				lopt.set_upper_bounds(1);
-				lopt.set_ftol_rel(1e-16);
-				lopt.set_ftol_abs(1e-16);
+//				lopt.set_ftol_rel(1e-16);
+//				lopt.set_ftol_abs(1e-16);
 
 				double E0j = 0;
 				try {
