@@ -42,30 +42,30 @@ using std::lock_guard;
 using std::string;
 using std::thread;
 
-#include <thrust/tuple.h>
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
-#include <thrust/complex.h>
-#include <thrust/sequence.h>
-#include <thrust/functional.h>
-#include <thrust/extrema.h>
-
-using thrust::device_vector;
-using thrust::host_vector;
-using thrust::complex;
-using thrust::copy_n;
-using thrust::tabulate;
-using thrust::transform;
-using thrust::reduce_by_key;
-using thrust::equal_to;
-using thrust::multiplies;
-using thrust::conj;
-using thrust::counting_iterator;
-using thrust::divides;
-using thrust::make_transform_iterator;
-using thrust::minus;
-using thrust::raw_pointer_cast;
-using thrust::max_element;
+//#include <thrust/tuple.h>
+//#include <thrust/device_vector.h>
+//#include <thrust/host_vector.h>
+//#include <thrust/complex.h>
+//#include <thrust/sequence.h>
+//#include <thrust/functional.h>
+//#include <thrust/extrema.h>
+//
+//using thrust::device_vector;
+//using thrust::host_vector;
+//using thrust::complex;
+//using thrust::copy_n;
+//using thrust::tabulate;
+//using thrust::transform;
+//using thrust::reduce_by_key;
+//using thrust::equal_to;
+//using thrust::multiplies;
+//using thrust::conj;
+//using thrust::counting_iterator;
+//using thrust::divides;
+//using thrust::make_transform_iterator;
+//using thrust::minus;
+//using thrust::raw_pointer_cast;
+//using thrust::max_element;
 
 #include <boost/lexical_cast.hpp>
 #include <boost/progress.hpp>
@@ -447,13 +447,13 @@ public:
 		return res;
 	}
 
-	const matrix<double> hessian(const column_vector& x) const {
-		const vector<double> xv(x.begin(), x.end());
-		matrix<double> hess(2 * L * (nmax + 1), 2 * L * (nmax + 1));
-		column_vector grad(2 * L * (nmax + 1));
-		en.get_derivative_and_hessian(x, grad, hess);
-		return hess;
-	}
+//	const matrix<double> hessian(const column_vector& x) const {
+//		const vector<double> xv(x.begin(), x.end());
+//		matrix<double> hess(2 * L * (nmax + 1), 2 * L * (nmax + 1));
+//		column_vector grad(2 * L * (nmax + 1));
+//		en.get_derivative_and_hessian(x, grad, hess);
+//		return hess;
+//	}
 
 private:
 	energy& en;
@@ -716,7 +716,7 @@ int main(int argc, char** argv) {
 		array<double, L> Ja = J0p(j, 0);
 		array<double, L> dUa = dU0p(j, 0);
 		double U00 = U0p(j, 0);
-		host_vector<double> dU0(L), J0(L);
+		vector<double> dU0(L), J0(L);
 		double mu0 = mu * U00;
 		for (int i = 0; i < L; i++) {
 			dU0[i] = dUa[i];
@@ -754,8 +754,8 @@ int main(int argc, char** argv) {
 			std::placeholders::_1);
 		auto gradbind = bind(&energy_model::gradient, &mod,
 			std::placeholders::_1);
-		auto hessbind = bind(&energy_model::hessian, &mod,
-			std::placeholders::_1);
+//		auto hessbind = bind(&energy_model::hessian, &mod,
+//			std::placeholders::_1);
 //		find_min(lbfgs_search_strategy(10),
 //			objective_delta_stop_strategy(1e-12), objbind, gradbind, f0jd,
 //			-1e12);

@@ -14,9 +14,18 @@ using std::cout;
 using std::endl;
 using std::ostream_iterator;
 
+#include <thrust/host_vector.h>
+#include <thrust/device_vector.h>
+#include <thrust/complex.h>
 #include <thrust/functional.h>
 #include <thrust/tabulate.h>
 
+using thrust::host_vector;
+using thrust::device_vector;
+using thrust::complex;
+using thrust::iterator_adaptor;
+using thrust::use_default;
+using thrust::counting_iterator;
 using thrust::equal_to;
 using thrust::multiplies;
 using thrust::tabulate;
@@ -27,6 +36,18 @@ using thrust::iterator_core_access;
 #include "gutzwiller.hpp"
 #include "groundstate.hpp"
 //#include "mathematica.hpp"
+
+#ifdef CPU
+typedef host_vector<complex<double>> state_type;
+typedef host_vector<double> double_vector;
+typedef host_vector<complex<double>> complex_vector;
+typedef host_vector<int> int_vector;
+#else
+typedef device_vector<complex<double>> state_type;
+typedef device_vector<double> double_vector;
+typedef device_vector<complex<double>> complex_vector;
+typedef device_vector<int> int_vector;
+#endif
 
 extern void hamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 	const double_vector& dU, const double_vector& J, const double_vector& mu,
@@ -462,10 +483,13 @@ double energy::value(const vector<double>& x) {
 	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
 
 	state_type H(1);
-	double_vector U0p(1, 0), Jp(L, 0);
-	hamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
+	double_vector U0v(1, U0), muv(1, mu), U0p(1, 0), Jp(L, 0);
+	double_vector Jv(J.begin(), J.end());
+	double_vector dUv(dU.begin(), dU.end());
+	hamiltonian(fc, f, U0v, dUv, Jv, muv, norm1, norm2, norm3, U0p, Jp, H);
 
-	return H[0].real() / norm0[0].real();
+	host_vector<complex<double>> Hh = H;
+	return Hh[0].real() / norm0h[0].real();
 }
 
 void energy::gradient(const vector<double> &x, vector<double> &grad) {
@@ -498,7 +522,7 @@ void energy::gradient(const vector<double> &x, vector<double> &grad) {
 	complex_vector norm0(1);
 	reduce_by_key(Lkeys.begin(), Lkeys.end(), normi.begin(), okeys.begin(),
 		norm0.begin(), equal_to<int>(), multiplies<complex<double>>());
-	complex_vector norm00 = norm0;
+	host_vector<complex<double>> norm00 = norm0;
 
 	host_vector<complex<double>> norm0h = norm0, normih = normi;
 	host_vector<complex<double>> norm1h(L), norm2h(L), norm3h(L);
@@ -512,9 +536,11 @@ void energy::gradient(const vector<double> &x, vector<double> &grad) {
 	state_type fc = fc0;
 
 	state_type H(1);
-	double_vector U0p(1, 0), Jp(L, 0);
-	hamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
-	state_type H0 = H;
+	double_vector U0v(1, U0), muv(1, mu), U0p(1, 0), Jp(L, 0);
+	double_vector Jv(J.begin(), J.end());
+	double_vector dUv(dU.begin(), dU.end());
+	hamiltonian(fc, f, U0v, dUv, Jv, muv, norm1, norm2, norm3, U0p, Jp, H);
+	host_vector<complex<double>> H0 = H;
 
 	vector<double> dH(2 * L * (nmax + 1));
 	for (int i = 0; i < L; i++) {
@@ -531,17 +557,18 @@ void energy::gradient(const vector<double> &x, vector<double> &grad) {
 				multiplies<complex<double>>());
 			norm0h = norm0;
 			normih = normi;
-			for (int i = 0; i < L; i++) {
-				norm1h[i] = norm0h[0] / normih[i];
-				norm2h[i] = norm1h[i] / normih[mod(i + 1)];
-				norm3h[i] = norm2h[i] / normih[mod(i + 2)];
+			for (int j = 0; j < L; j++) {
+				norm1h[j] = norm0h[0] / normih[j];
+				norm2h[j] = norm1h[j] / normih[mod(j + 1)];
+				norm3h[j] = norm2h[j] / normih[mod(j + 2)];
 			}
 			norm1 = norm1h;
 			norm2 = norm2h;
 			norm3 = norm3h;
-			hamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
-			complex<double> dH = H[0] / norm00[0]
-				- H0[0] * norm0[0] / (norm00[0] * norm00[0]);
+			hamiltonian(fc, f, U0v, dUv, Jv, muv, norm1, norm2, norm3, U0p, Jp, H);
+			host_vector<complex<double>> Hh = H;
+			complex<double> dH = Hh[0] / norm00[0]
+				- H0[0] * norm0h[0] / (norm00[0] * norm00[0]);
 			grad[2 * in(i, n)] = 2 * dH.real();
 			grad[2 * in(i, n) + 1] = 2 * dH.imag();
 		}

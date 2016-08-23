@@ -24,12 +24,18 @@ using std::ofstream;
 
 using boost::algorithm::replace_all_copy;
 
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/complex.h>
 #include <thrust/functional.h>
 #include <thrust/tabulate.h>
 #include <thrust/extrema.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/count.h>
 
+using thrust::device_vector;
+using thrust::host_vector;
+using thrust::complex;
 using thrust::counting_iterator;
 using thrust::iterator_adaptor;
 using thrust::use_default;
@@ -71,6 +77,18 @@ using Eigen::ComputeFullV;
 
 typedef Matrix<std::complex<double>, nmax + 1, nmax + 1> GramMatrix;
 typedef Matrix<std::complex<double>, nmax + 1, 1> SiteVector;
+
+#ifdef CPU
+typedef host_vector<complex<double>> state_type;
+typedef host_vector<double> double_vector;
+typedef host_vector<complex<double>> complex_vector;
+typedef host_vector<int> int_vector;
+#else
+typedef device_vector<complex<double>> state_type;
+typedef device_vector<double> double_vector;
+typedef device_vector<complex<double>> complex_vector;
+typedef device_vector<int> int_vector;
+#endif
 
 extern void hamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 	const double_vector& dU, const double_vector& J, const double_vector& mu,
@@ -276,7 +294,7 @@ ostream& operator<<(ostream& out, const mathematic<std::complex<double> > m) {
 		<< mathematic<double>(c.imag()) << ")";
 	return out;
 }
-#ifndef __CUDACC__
+
 void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	const double t) {
 
@@ -474,6 +492,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	}
 //		Gij.makeCompressed();
 
+#ifndef __CUDACC__
 	VectorXcd Hiv(Ndim);
 	for (int i = 0; i < Ndim; i++) {
 		Hiv[i] = Hih[i];
@@ -484,5 +503,5 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	for (int i = 0; i < Ndim; i++) {
 		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
 	}
-}
 #endif
+}
