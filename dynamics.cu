@@ -276,7 +276,7 @@ ostream& operator<<(ostream& out, const mathematic<std::complex<double> > m) {
 		<< mathematic<double>(c.imag()) << ")";
 	return out;
 }
-
+#ifndef __CUDACC__
 void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	const double t) {
 
@@ -394,7 +394,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 			copy(H.begin(), H.end(), stride.begin());
 		}
 	}
-	complex_vector covariant = convarianth;
+	complex_vector covariant = covarianth;
 
 	auto norm1rep = make_repeat_iterator(norm1.begin(), nmax + 1);
 
@@ -450,7 +450,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 						f.begin() + k * L * (nmax + 1) + (i + 1) * (nmax + 1),
 						diff<double>(m));
 				}
-				host_vector<complex<double>> ddnorms(Ndim), ddnormi(N*L), ddnorm0(N);
+//				host_vector<complex<double>> ddnorms(Ndim), ddnormi(N*L), ddnorm0(N);
 				transform(fc.begin(), fc.end(), f.begin(), ddnorms.begin(),
 					multiplies<complex<double>>());
 				reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), ddnorms.begin(),
@@ -485,3 +485,4 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
 	}
 }
+#endif
