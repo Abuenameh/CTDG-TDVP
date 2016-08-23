@@ -17,6 +17,8 @@
 #include <thread>
 #include <queue>
 #include <string>
+#include <mutex>
+#include <queue>
 
 using std::function;
 using std::array;
@@ -163,22 +165,22 @@ class locking_queue {
 public:
 	void push(T const & value) {
 		lock_guard<mutex> lock(mut);
-		queue.push(value);
+		q.push(value);
 	}
 
 	bool pop(T & value) {
 		lock_guard<mutex> lock(mut);
-		if (queue.empty()) {
+		if (q.empty()) {
 			return false;
 		} else {
-			value = queue.front();
-			queue.pop();
+			value = q.front();
+			q.pop();
 			return true;
 		}
 	}
 
 private:
-	queue<T> queue;
+	queue<T> q;
 	mutex mut;
 };
 
