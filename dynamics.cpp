@@ -280,29 +280,25 @@ ostream& operator<<(ostream& out, const mathematic<std::complex<double> > m) {
 void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	const double t) {
 
-	vector<complex<double>> fcom(fcon.begin(), fcon.end());
+	state_type f0(Ndim);
+	thrust::copy(fcon.begin(), fcon.end(), f0.begin());
 
-//	state_type f0(Ndim);
-//	device_vector<thrust::complex<double>> f0(Ndim);
-	device_vector<double> f0(Ndim);
-//	thrust::copy(fcom.begin(), fcom.end(), f0.begin());
-//
-//	state_type fc0(Ndim);
-//	transform(f0.begin(), f0.end(), fc0.begin(), conjop<double>());
+	state_type fc0(Ndim);
+	transform(f0.begin(), f0.end(), fc0.begin(), conjop<double>());
 
-//	host_vector<complex<double>> f = f0;
-//
-//	int N = f.size() / L / (nmax + 1);
+	state_type f = f0;
+
+	int N = f.size() / L / (nmax + 1);
 
 	host_vector<double> U0h(N), dUh(N*L), Jh(N*L), muh(N), U0ph(N), Jph(N*L);
 	for (int i = 0; i < N; i++) {
-//		U0h[i] = U0f(i, t);
-//		copy_n(dUf(i, t).begin(), L, dUh.begin() + i * L);
-//		copy_n(Jf(i, t).begin(), L, Jh.begin() + i * L);
-//		muh[i] = muf(i, t);
-//		U0ph[i] = U0pf(i, t);
-//		copy_n(Jpf(i, t).begin(), L, Jph.begin() + i * L);
-	}/*
+		U0h[i] = U0f(i, t);
+		copy_n(dUf(i, t).begin(), L, dUh.begin() + i * L);
+		copy_n(Jf(i, t).begin(), L, Jh.begin() + i * L);
+		muh[i] = muf(i, t);
+		U0ph[i] = U0pf(i, t);
+		copy_n(Jpf(i, t).begin(), L, Jph.begin() + i * L);
+	}
 	double_vector U0 = U0h, dU = dUh, J = Jh, mu = muh, U0p = U0ph, Jp = Jph;
 
 	int_vector okeys(N * L);
@@ -340,8 +336,8 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	}
 	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
 
-	host_vector<complex<double>> fc = fc0;
-/*
+	state_type fc = fc0;
+
 	state_type H(N);
 
 	host_vector<double> U0h = U0;
@@ -479,5 +475,5 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 
 	for (int i = 0; i < Ndim; i++) {
 		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
-	}*/
+	}
 }
