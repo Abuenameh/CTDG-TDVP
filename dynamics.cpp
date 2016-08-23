@@ -290,22 +290,16 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 
 	int N = f.size() / L / (nmax + 1);
 
-	double_vector U0(N);
-	double_vector dU(N * L);
-	double_vector J(N * L);
-	double_vector mu(N);
+	host_vector<double> U0h(N), dU(N*L), J(N*L), mu(N), U0p(N), Jp(N*L);
 	for (int i = 0; i < N; i++) {
-		U0[i] = U0f(i, t);
-		copy_n(dUf(i, t).begin(), L, dU.begin() + i * L);
-		copy_n(Jf(i, t).begin(), L, J.begin() + i * L);
-		mu[i] = muf(i, t);
-	}
-	double_vector U0p(N);
-	double_vector Jp(N * L);
-	for (int i = 0; i < N; i++) {
+		U0h[i] = U0f(i, t);
+		copy_n(dUf(i, t).begin(), L, dUh.begin() + i * L);
+		copy_n(Jf(i, t).begin(), L, Jh.begin() + i * L);
+		muh[i] = muf(i, t);
 		U0p[i] = U0pf(i, t);
 		copy_n(Jpf(i, t).begin(), L, Jp.begin() + i * L);
 	}
+	double_vector U0 = U0h, dU = dUh, J = Jh, mu = muh, U0p = U0ph, Jp = Jph;
 
 	int_vector okeys(N * L);
 	int_vector nmaxkeys(N * L * (nmax + 1));
