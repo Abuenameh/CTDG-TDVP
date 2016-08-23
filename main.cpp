@@ -412,6 +412,14 @@ private:
 	U Wp;
 };
 
+double objective(const vector<double>& x, vector<double>& grad, void* data) {
+	energy* en = static_cast<energy*>(data);
+	if (!grad.empty()) {
+		en->gradient(x, grad);
+	}
+	return en->value(x);
+}
+
 class energy_model {
 public:
 	energy_model(energy& en) :
