@@ -124,6 +124,7 @@ struct conjop {
 	}
 };
 
+/*
 double energy::operator()(const column_vector& x) const {
 	host_vector<complex<double>> fh(L * (nmax + 1)), fch(L * (nmax + 1));
 	for (int i = 0; i < L * (nmax + 1); i++) {
@@ -153,12 +154,14 @@ double energy::operator()(const column_vector& x) const {
 	reduce_by_key(keys.begin(), keys.begin() + L, normi.begin(), okeys.begin(),
 		norm0.begin(), equal_to<int>(), multiplies<complex<double>>());
 
-	complex_vector norm1(L), norm2(L), norm3(L);
+	host_vector<complex<double>> norm0h = norm0, normih = normi;
+	host_vector<complex<double>> norm1h(L), norm2h(L), norm3h(L);
 	for (int i = 0; i < L; i++) {
-		norm1[i] = norm0[0] / normi[i];
-		norm2[i] = norm1[i] / normi[mod(i + 1)];
-		norm3[i] = norm2[i] / normi[mod(i + 2)];
+		norm1h[i] = norm0h[0] / normih[i];
+		norm2h[i] = norm1h[i] / normih[mod(i + 1)];
+		norm3h[i] = norm2h[i] / normih[mod(i + 2)];
 	}
+	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
 
 	state_type H(1);
 	double_vector U0p(1, 0), Jp(L, 0);
@@ -418,7 +421,7 @@ void energy::get_derivative_and_hessian(const column_vector& x,
 			}
 		}
 	}
-}
+}*/
 
 double energy::value(const vector<double>& x) {
 	host_vector<complex<double>> fh(L * (nmax + 1)), fch(L * (nmax + 1));
@@ -449,12 +452,14 @@ double energy::value(const vector<double>& x) {
 	reduce_by_key(keys.begin(), keys.begin() + L, normi.begin(), okeys.begin(),
 		norm0.begin(), equal_to<int>(), multiplies<complex<double>>());
 
-	complex_vector norm1(L), norm2(L), norm3(L);
+	host_vector<complex<double>> norm0h = norm0, normih = normi;
+	host_vector<complex<double>> norm1h(L), norm2h(L), norm3h(L);
 	for (int i = 0; i < L; i++) {
-		norm1[i] = norm0[0] / normi[i];
-		norm2[i] = norm1[i] / normi[mod(i + 1)];
-		norm3[i] = norm2[i] / normi[mod(i + 2)];
+		norm1h[i] = norm0h[0] / normih[i];
+		norm2h[i] = norm1h[i] / normih[mod(i + 1)];
+		norm3h[i] = norm2h[i] / normih[mod(i + 2)];
 	}
+	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
 
 	state_type H(1);
 	double_vector U0p(1, 0), Jp(L, 0);
@@ -495,15 +500,16 @@ void energy::gradient(const vector<double> &x, vector<double> &grad) {
 		norm0.begin(), equal_to<int>(), multiplies<complex<double>>());
 	complex_vector norm00 = norm0;
 
-	complex_vector norm1(L), norm2(L), norm3(L);
+	host_vector<complex<double>> norm0h = norm0, normih = normi;
+	host_vector<complex<double>> norm1h(L), norm2h(L), norm3h(L);
 	for (int i = 0; i < L; i++) {
-		norm1[i] = norm0[0] / normi[i];
-		norm2[i] = norm1[i] / normi[mod(i + 1)];
-		norm3[i] = norm2[i] / normi[mod(i + 2)];
+		norm1h[i] = norm0h[0] / normih[i];
+		norm2h[i] = norm1h[i] / normih[mod(i + 1)];
+		norm3h[i] = norm2h[i] / normih[mod(i + 2)];
 	}
+	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
 
-	state_type fc(L * (nmax + 1));
-	fc = fc0;
+	state_type fc = fc0;
 
 	state_type H(1);
 	double_vector U0p(1, 0), Jp(L, 0);
@@ -523,11 +529,16 @@ void energy::gradient(const vector<double> &x, vector<double> &grad) {
 			reduce_by_key(Lkeys.begin(), Lkeys.end(), normi.begin(),
 				okeys.begin(), norm0.begin(), equal_to<int>(),
 				multiplies<complex<double>>());
+			norm0h = norm0;
+			normih = normi;
 			for (int i = 0; i < L; i++) {
-				norm1[i] = norm0[0] / normi[i];
-				norm2[i] = norm1[i] / normi[mod(i + 1)];
-				norm3[i] = norm2[i] / normi[mod(i + 2)];
+				norm1h[i] = norm0h[0] / normih[i];
+				norm2h[i] = norm1h[i] / normih[mod(i + 1)];
+				norm3h[i] = norm2h[i] / normih[mod(i + 2)];
 			}
+			norm1 = norm1h;
+			norm2 = norm2h;
+			norm3 = norm3h;
 			hamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
 			complex<double> dH = H[0] / norm00[0]
 				- H0[0] * norm0[0] / (norm00[0] * norm00[0]);

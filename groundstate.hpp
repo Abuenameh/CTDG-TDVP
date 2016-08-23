@@ -61,10 +61,12 @@ public:
 
 	void gradient(const vector<double> &x, vector<double> &grad);
 
+	/*
 	double operator()(const column_vector& x) const;
 
 	void get_derivative_and_hessian(const column_vector& x,
 		column_vector& grad, matrix<double>& hess) const;
+		*/
 
 private:
 	double_vector U0;
