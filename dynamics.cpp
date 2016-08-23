@@ -286,10 +286,8 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	state_type fc0(Ndim);
 	transform(f0.begin(), f0.end(), fc0.begin(), conjop<double>());
 
-//	state_type f = f0;
-	state_type f(Ndim);
-	thrust::copy(f0.begin(), f0.end(), f.begin());
-/*
+	host_vector<complex<double>> f = f0;
+
 	int N = f.size() / L / (nmax + 1);
 
 	double_vector U0(N);
@@ -332,17 +330,20 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 		okeys.begin(), norm0.begin(), equal_to<int>(),
 		multiplies<complex<double>>());
 
-	complex_vector norm1(N * L), norm2(N * L), norm3(N * L);
+	host_vector<complex<double>> norm0h = norm0, normih = normi;
+	host_vector<complex<double>> norm1h(N*L), norm2h(N*L), norm3h(N*L);
+//	complex_vector norm1(N * L), norm2(N * L), norm3(N * L);
 	for (int i = 0; i < L; i++) {
 		for (int j = 0; j < N; j++) {
-			norm1[j * L + i] = norm0[j] / normi[j * L + i];
-			norm2[j * L + i] = norm1[j * L + i] / normi[j * L + mod(i + 1)];
-			norm3[j * L + i] = norm2[j * L + i] / normi[j * L + mod(i + 2)];
+			norm1h[j * L + i] = norm0h[j] / normih[j * L + i];
+			norm2h[j * L + i] = norm1h[j * L + i] / normih[j * L + mod(i + 1)];
+			norm3h[j * L + i] = norm2h[j * L + i] / normih[j * L + mod(i + 2)];
 		}
 	}
+	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
 
-	state_type fc = fc0;
-
+	host_vector<complex<double>> fc = fc0;
+/*
 	state_type H(N);
 
 	host_vector<double> U0h = U0;
