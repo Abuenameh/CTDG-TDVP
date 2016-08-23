@@ -286,8 +286,10 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	state_type fc0(Ndim);
 	transform(f0.begin(), f0.end(), fc0.begin(), conjop<double>());
 
-	state_type f = f0;
-
+//	state_type f = f0;
+	state_type f(Ndim);
+	thrust::copy(f0.begin(), f0.end(), f.begin());
+/*
 	int N = f.size() / L / (nmax + 1);
 
 	double_vector U0(N);
@@ -460,7 +462,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 							- covarianth[in(k, i, n)]
 								* conj(covarianth[in(k, i, m)])
 								/ (norm0h[k] * norm0h[k]));
-//							Gij.insert(in(k, i, n), in(k, i, m)) = std::complex<double>(1, 0)*(std::complex<double>(ddnorm0[k]/norm0h[k]/*) - std::complex<double>(*/-covarianth[in(k, i, n)]
+//							Gij.insert(in(k, i, n), in(k, i, m)) = std::complex<double>(1, 0)*(std::complex<double>(ddnorm0[k]/norm0h[k] - covarianth[in(k, i, n)]
 //							             									* conj(covarianth[in(k, i, m)])
 //							             									/ (norm0h[k] * norm0h[k])));
 				}
@@ -478,5 +480,5 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 
 	for (int i = 0; i < Ndim; i++) {
 		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
-	}
+	}*/
 }
