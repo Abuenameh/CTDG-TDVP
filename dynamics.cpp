@@ -24,12 +24,18 @@ using std::ofstream;
 
 using boost::algorithm::replace_all_copy;
 
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/complex.h>
 #include <thrust/functional.h>
 #include <thrust/tabulate.h>
 #include <thrust/extrema.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/count.h>
 
+using thrust::device_vector;
+using thrust::host_vector;
+using thrust::complex;
 using thrust::counting_iterator;
 using thrust::iterator_adaptor;
 using thrust::use_default;
@@ -71,6 +77,18 @@ using Eigen::ComputeFullV;
 
 typedef Matrix<std::complex<double>, nmax + 1, nmax + 1> GramMatrix;
 typedef Matrix<std::complex<double>, nmax + 1, 1> SiteVector;
+
+#ifdef CPU
+typedef host_vector<complex<double>> state_type;
+typedef host_vector<double> double_vector;
+typedef host_vector<complex<double>> complex_vector;
+typedef host_vector<int> int_vector;
+#else
+typedef device_vector<complex<double>> state_type;
+typedef device_vector<double> double_vector;
+typedef device_vector<complex<double>> complex_vector;
+typedef device_vector<int> int_vector;
+#endif
 
 extern void hamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 	const double_vector& dU, const double_vector& J, const double_vector& mu,
@@ -280,6 +298,8 @@ ostream& operator<<(ostream& out, const mathematic<std::complex<double> > m) {
 void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	const double t) {
 
+	vector<complex<double>> fcom(fcon.begin(), fcon.end());
+
 	state_type f0(Ndim);
 	thrust::copy(fcon.begin(), fcon.end(), f0.begin());
 
@@ -326,7 +346,6 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 
 	host_vector<complex<double>> norm0h = norm0, normih = normi;
 	host_vector<complex<double>> norm1h(N*L), norm2h(N*L), norm3h(N*L);
-//	complex_vector norm1(N * L), norm2(N * L), norm3(N * L);
 	for (int i = 0; i < L; i++) {
 		for (int j = 0; j < N; j++) {
 			norm1h[j * L + i] = norm0h[j] / normih[j * L + i];
@@ -340,13 +359,13 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 
 	state_type H(N);
 
-	host_vector<double> U0h = U0;
-	host_vector<double> dUh = dU;
-	host_vector<double> Jh = J;
-	host_vector<double> muh = mu;
-	host_vector<complex<double>> norm1h2 = norm1;
-	host_vector<complex<double>> norm2h2 = norm2;
-	host_vector<complex<double>> norm3h2 = norm3;
+//	host_vector<double> U0h = U0;
+//	host_vector<double> dUh = dU;
+//	host_vector<double> Jh = J;
+//	host_vector<double> muh = mu;
+//	host_vector<complex<double>> norm1h2 = norm1;
+//	host_vector<complex<double>> norm2h2 = norm2;
+//	host_vector<complex<double>> norm3h2 = norm3;
 	dynamicshamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
 	state_type E = H;
 
@@ -354,8 +373,9 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	complex_vector dnorms(Ndim);
 	complex_vector dnormi(N * L);
 	complex_vector dnorm0(N);
-	complex_vector dnorm1(N * L), dnorm2(N * L), dnorm3(N * L);
-	complex_vector covariant(Ndim);
+//	complex_vector dnorm1(N * L), dnorm2(N * L), dnorm3(N * L);
+//	complex_vector covariant(Ndim);
+	host_vector<complex<double>> covarianth(Ndim);
 	for (int i = 0; i < L; i++) {
 		for (int n = 0; n <= nmax; n++) {
 			f = f0;
@@ -372,16 +392,19 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 			reduce_by_key(Lkeys.begin(), Lkeys.end(), dnormi.begin(),
 				okeys.begin(), dnorm0.begin(), equal_to<int>(),
 				multiplies<complex<double>>());
+			host_vector<complex<double>> dnorm0h = dnorm0, dnormih = dnormi;
+			host_vector<complex<double>> dnorm1h(N*L), dnorm2h(N*L), dnorm3h(N*L);
 			for (int k = 0; k < N; k++) {
-				covariant[in(k, i, n)] = dnorm0[k];
+				covarianth[in(k, i, n)] = dnorm0h[k];
 				for (int j = 0; j < L; j++) {
-					dnorm1[k * L + j] = dnorm0[k] / dnormi[k * L + j];
-					dnorm2[k * L + j] = dnorm1[k * L + j]
-						/ dnormi[k * L + mod(j + 1)];
-					dnorm3[k * L + j] = dnorm2[k * L + j]
-						/ dnormi[k * L + mod(j + 2)];
+					dnorm1h[k * L + j] = dnorm0h[k] / dnormih[k * L + j];
+					dnorm2h[k * L + j] = dnorm1h[k * L + j]
+						/ dnormih[k * L + mod(j + 1)];
+					dnorm3h[k * L + j] = dnorm2h[k * L + j]
+						/ dnormih[k * L + mod(j + 2)];
 				}
 			}
+			complex_vector dnorm1 = dnorm1h, dnorm2 = dnorm2h, dnorm3 = dnorm3h;
 			dynamicshamiltonian(fc, f, U0, dU, J, mu, dnorm1, dnorm2, dnorm3,
 				U0p, Jp, H);
 			strided_range<state_type::iterator> stride(dH.begin() + in(i, n),
@@ -389,6 +412,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 			copy(H.begin(), H.end(), stride.begin());
 		}
 	}
+	complex_vector covariant = covarianth;
 
 	auto norm1rep = make_repeat_iterator(norm1.begin(), nmax + 1);
 
@@ -416,12 +440,12 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 		minus<complex<double>>());
 	host_vector<complex<double>> Hih = Hi;
 
-	host_vector<complex<double>> fh = f;
-	host_vector<complex<double>> norm0h = norm0;
-	host_vector<complex<double>> norm1h = norm1;
-	host_vector<complex<double>> normih = normi;
+//	host_vector<complex<double>> fh = f;
+//	host_vector<complex<double>> norm0h = norm0;
+//	host_vector<complex<double>> norm1h = norm1;
+//	host_vector<complex<double>> normih = normi;
 
-	host_vector<complex<double>> covarianth = covariant;
+//	host_vector<complex<double>> covarianth = covariant;
 	complex_vector ddnorms(Ndim);
 	complex_vector ddnormi(N * L);
 	complex_vector ddnorm0(N);
@@ -444,6 +468,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 						f.begin() + k * L * (nmax + 1) + (i + 1) * (nmax + 1),
 						diff<double>(m));
 				}
+//				host_vector<complex<double>> ddnorms(Ndim), ddnormi(N*L), ddnorm0(N);
 				transform(fc.begin(), fc.end(), f.begin(), ddnorms.begin(),
 					multiplies<complex<double>>());
 				reduce_by_key(nmaxkeys.begin(), nmaxkeys.end(), ddnorms.begin(),
@@ -451,9 +476,10 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 				reduce_by_key(Lkeys.begin(), Lkeys.end(), ddnormi.begin(),
 					okeys.begin(), ddnorm0.begin(), equal_to<int>(),
 					multiplies<complex<double>>());
+				host_vector<complex<double>> ddnorm0h = ddnorm0;
 				for (int k = 0; k < N; k++) {
 					Gij(in(k, i, n), in(k, i, m)) = std::complex<double>(
-						ddnorm0[k] / norm0h[k]
+						ddnorm0h[k] / norm0h[k]
 							- covarianth[in(k, i, n)]
 								* conj(covarianth[in(k, i, m)])
 								/ (norm0h[k] * norm0h[k]));
@@ -466,6 +492,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	}
 //		Gij.makeCompressed();
 
+#ifndef __CUDACC__
 	VectorXcd Hiv(Ndim);
 	for (int i = 0; i < Ndim; i++) {
 		Hiv[i] = Hih[i];
@@ -476,4 +503,5 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	for (int i = 0; i < Ndim; i++) {
 		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
 	}
+#endif
 }
