@@ -391,7 +391,7 @@ struct Jp_param {
 		array<double, L> ret;
 		for (int j = 0; j < L; j++) {
 			int k = mod(j + 1);
-			ret[i] = -alpha * pow(Wi[j], 2) * Wi[k] * Wip[j]
+			ret[j] = -alpha * pow(Wi[j], 2) * Wi[k] * Wip[j]
 				/ (pow(pow(Ng, 2) + pow(Wi[j], 2), 1.5)
 					* sqrt(pow(Ng, 2) + pow(Wi[k], 2)))
 				+ alpha * Wi[k] * Wip[j]
@@ -514,6 +514,11 @@ void threadfunc(vector<energy>& en, vector<vector<double>>& f0,
 		double tau = point.tau;
 
 		ode_state_type f = point.f0;
+//				for (int i = 0; i < L; i++) {
+//					for (int n = 0; n <= nmax; n++) {
+//						f[in(i,n)] = complex<double>(0.5+0.01*(i+1)+0.002*n, 0.6+0.02*(i+1)+0.001*n);
+//					}
+//				}
 
 		dynamics dyn(point.U0, point.dU, point.J, system_param(point.mu),
 			point.U0p, point.Jp);
@@ -844,7 +849,7 @@ int main(int argc, char** argv) {
 		U0p_param<W_param, Wp_param> U0pt(Wt, Wpt);
 		Jp_param<W_param, Wp_param> Jpt(Wt, Wpt);
 
-		taupoint<W_param, Wp_param> point(itau, tau, dUWt, Wt, Wpt, mu, f0c);
+		taupoint<W_param, Wp_param> point(itau, tau, dUWt, Wt, Wpt, mu*UW(Wi), f0c);
 		points.push(point);
 
 	}

@@ -320,6 +320,23 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 		copy_n(Jpf(i, t).begin(), L, Jph.begin() + i * L);
 	}
 	double_vector U0 = U0h, dU = dUh, J = Jh, mu = muh, U0p = U0ph, Jp = Jph;
+//	cout << "U = " << U0h[0] << endl;
+//	cout << "dU = ";
+//	for (int i = 0; i < L; i++) {
+//		cout << mathe(dUh[i]) << ",";
+//	}
+//	cout << endl;
+//	cout << "J = ";
+//	for (int i = 0; i < L; i++) {
+//		cout << mathe(Jh[i]) << ",";
+//	}
+//	cout << endl;
+//	cout << "Up = " << U0p[0] << endl;
+//	cout << "Jp = ";
+//	for (int i = 0; i < L; i++) {
+//		cout << mathe(Jph[i]) << ",";
+//	}
+//	cout << endl;
 
 	int_vector okeys(N * L);
 	int_vector nmaxkeys(N * L * (nmax + 1));
@@ -354,6 +371,21 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 		}
 	}
 	complex_vector norm1 = norm1h, norm2 = norm2h, norm3 = norm3h;
+//		cout << "norm1 = ";
+//		for (int i = 0; i < L; i++) {
+//			cout << mathe(norm1h[i]) << ",";
+//		}
+//		cout << endl;
+//		cout << "norm2 = ";
+//		for (int i = 0; i < L; i++) {
+//			cout << mathe(norm2h[i]) << ",";
+//		}
+//		cout << endl;
+//		cout << "norm3 = ";
+//		for (int i = 0; i < L; i++) {
+//			cout << mathe(norm3h[i]) << ",";
+//		}
+//		cout << endl;
 
 	state_type fc = fc0;
 
@@ -368,6 +400,7 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 //	host_vector<complex<double>> norm3h2 = norm3;
 	dynamicshamiltonian(fc, f, U0, dU, J, mu, norm1, norm2, norm3, U0p, Jp, H);
 	state_type E = H;
+	host_vector<complex<double>> Eh = E;
 
 	complex_vector dH(Ndim);
 	complex_vector dnorms(Ndim);

@@ -10,7 +10,7 @@
 
 #include <cmath>
 
-const int L = 25;
+const int L = 10;
 const int nmax = 7;
 const int N = 1;
 
