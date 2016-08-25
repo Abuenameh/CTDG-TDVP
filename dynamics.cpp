@@ -402,6 +402,12 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	state_type E = H;
 	host_vector<complex<double>> Eh = E;
 
+//	cout << "{" << mathe(norm0h[0]);
+//	for (int i = 1; i < norm0h.size(); i++) {
+//		cout << "," << mathe(norm0h[i]);
+//	}
+//	cout << "}" << endl;
+
 	complex_vector dH(Ndim);
 	complex_vector dnorms(Ndim);
 	complex_vector dnormi(N * L);
@@ -440,12 +446,31 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 			complex_vector dnorm1 = dnorm1h, dnorm2 = dnorm2h, dnorm3 = dnorm3h;
 			dynamicshamiltonian(fc, f, U0, dU, J, mu, dnorm1, dnorm2, dnorm3,
 				U0p, Jp, H);
+			host_vector<complex<double>> Hh2=H;
+//			host_vector<double> Hh2=U0;
+//			cout << "{" << mathe(Hh2[0]);
+//			for (int i = 1; i < Hh2.size(); i++) {
+//				cout << "," << mathe(Hh2[i]);
+//			}
+//			cout << "}" << endl;
 			strided_range<state_type::iterator> stride(dH.begin() + in(i, n),
 				dH.end(), L * (nmax + 1));
 			copy(H.begin(), H.end(), stride.begin());
 		}
 	}
 	complex_vector covariant = covarianth;
+//	cout << "{" << mathe(covarianth[0]);
+//	for (int i = 1; i < covarianth.size(); i++) {
+//		cout << "," << mathe(covarianth[i]);
+//	}
+//	cout << "}" << endl;
+	host_vector<complex<double>> dHh = dH;
+//	cout << "dH" << endl;
+//	cout << "{" << mathe(dHh[0]);
+//	for (int i = 1; i < dHh.size(); i++) {
+//		cout << "," << mathe(dHh[i]);
+//	}
+//	cout << "}" << endl;
 
 	auto norm1rep = make_repeat_iterator(norm1.begin(), nmax + 1);
 
@@ -456,6 +481,12 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	state_type Hi1(Ndim);
 	transform(dH.begin(), dH.end(), norm0rep, Hi1.begin(),
 		divides<complex<double>>());
+//	host_vector<complex<double>> Hi1h = Hi1;
+//	cout << "{" << mathe(Hi1h[0]);
+//	for (int i = 1; i < Hi1h.size(); i++) {
+//		cout << "," << mathe(Hi1h[i]);
+//	}
+//	cout << "}" << endl;
 
 	state_type Hi2(Ndim);
 	transform(covariant.begin(), covariant.end(), Erep, Hi2.begin(),
@@ -536,5 +567,17 @@ void dynamics::operator()(const ode_state_type& fcon, ode_state_type& dfdt,
 	for (int i = 0; i < Ndim; i++) {
 		dfdt[i] = -std::complex<double>(0, 1) * dfdtv[i];
 	}
+//	cout << "{" << mathe(Hiv[0]);
+//	for (int i = 1; i < Hiv.size(); i++) {
+//		cout << "," << mathe(Hiv[i]);
+//	}
+//	cout << "}" << endl;
+//	cout << "{" << mathe(dfdt[0]);
+//	for (int i = 1; i < dfdt.size(); i++) {
+//		cout << "," << mathe(dfdt[i]);
+//	}
+//	cout << "}" << endl;
+////	std::copy(dfdt.begin(), dfdt.end(), ostream_iterator<std::complex<double>>(cout,","));
+//	cout << endl;
 #endif
 }

@@ -629,7 +629,7 @@ void threadfunc(vector<energy>& en, vector<vector<double>>& f0,
 
 		{
 			lock_guard<mutex> proglock(progmutex);
-			++prog;
+//			++prog;
 		}
 	}
 }
@@ -644,22 +644,22 @@ int main(int argc, char** argv) {
 	ptime begin = microsec_clock::local_time();
 
 	int seed0 = lexical_cast<int>(argv[1]);
-	int nseed = lexical_cast<int>(argv[2]);
+//	int nseed = lexical_cast<int>(argv[2]);
 
-	double Wi = lexical_cast<double>(argv[3]);
-	double Wf = lexical_cast<double>(argv[4]);
+	double Wi = lexical_cast<double>(argv[2]);
+	double Wf = lexical_cast<double>(argv[3]);
 
-	double mu = lexical_cast<double>(argv[5]);
+	double mu = lexical_cast<double>(argv[4]);
 
-	double D = lexical_cast<double>(argv[6]);
+	double D = lexical_cast<double>(argv[5]);
 
-	double taui = lexical_cast<double>(argv[7]);
-	double tauf = lexical_cast<double>(argv[8]);
-	int ntaus = lexical_cast<int>(argv[9]);
+	double taui = lexical_cast<double>(argv[6]);
+	double tauf = lexical_cast<double>(argv[7]);
+	int ntaus = lexical_cast<int>(argv[8]);
 
-	int nthreads = lexical_cast<int>(argv[10]);
+	int nthreads = lexical_cast<int>(argv[9]);
 
-	int resi = lexical_cast<int>(argv[11]);
+	int resi = lexical_cast<int>(argv[10]);
 
 #ifdef AMAZON
 	path resdir("/home/ubuntu/Dropbox/Amazon EC2/Simulation Results/CTDG TDVP");
@@ -680,23 +680,26 @@ int main(int argc, char** argv) {
 		resfile = resdir / oss.str();
 	}
 
-	vector<array<double, L>> xis;
-	for (int i = 0; i < nseed; i++) {
+	vector<array<double, L>> xis, xi0s;
+	for (int i = 0; i < N; i++) {
 		rng.seed(seed0 + i);
 		array<double, L> xi;
 		for (int j = 0; j < L; j++) {
 			xi[j] = (1 + D * uni(rng));
 		}
 		xis.push_back(xi);
+		array<double, L> xi0;
+		xi0.fill(1);
+		xi0s.push_back(xi0);
 	}
 
-	vector<array<double, L>> xi0(1);
-	xi0[0].fill(1);
+//	vector<array<double, L>> xi0(1);
+//	xi0[0].fill(1);
 
 	boost::filesystem::ofstream os(resfile);
 
 	printMath(os, "seed0res", resi, seed0);
-	printMath(os, "nseedres", resi, nseed);
+//	printMath(os, "nseedres", resi, nseed);
 	printMath(os, "Lres", resi, L);
 	printMath(os, "nmaxres", resi, nmax);
 	printMath(os, "Nres", resi, N);
@@ -714,7 +717,7 @@ int main(int argc, char** argv) {
 		int seed = seed0 + j;
 
 		W0_param W0(Wi, xis);
-		W0_param dUW0(Wi, xi0);
+		W0_param dUW0(Wi, xi0s);
 		U0_param<W0_param> U0p(dUW0);
 		dU_param<W0_param, W0_param> dU0p(dUW0, W0);
 		J_param<W0_param> J0p(W0);
@@ -830,7 +833,7 @@ int main(int argc, char** argv) {
 	locking_queue<taupoint<W_param, Wp_param>> points;
 
 	ProgressBar prog(ntaus);
-	prog.Progressed(0);
+//	prog.Progressed(0);
 
 	for (int itau = 0; itau < ntaus; itau++) {
 
@@ -841,7 +844,7 @@ int main(int argc, char** argv) {
 		double tf = 2 * tau;
 
 		W_param Wt(Wi, Wf, tau, xis);
-		W_param dUWt(Wi, Wf, tau, xi0);
+		W_param dUWt(Wi, Wf, tau, xi0s);
 		U0_param<W_param> U0t(dUWt);
 		dU_param<W_param, W_param> dUt(dUWt, Wt);
 		J_param<W_param> Jt(Wt);

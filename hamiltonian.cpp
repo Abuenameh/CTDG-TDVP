@@ -10,6 +10,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/sequence.h>
+#include <thrust/tabulate.h>
+#include <thrust/gather.h>
 
 using thrust::get;
 using thrust::tuple;
@@ -32,6 +35,9 @@ using thrust::copy_n;
 using thrust::iterator_adaptor;
 using thrust::use_default;
 using thrust::iterator_core_access;
+using thrust::sequence;
+using thrust::tabulate;
+using thrust::gather;
 
 #ifdef CPU
 typedef host_vector<complex<double>> state_type;
@@ -65,6 +71,7 @@ struct hamiltonian_functor {
 
 #include "energy.incl"
 
+//		printf("Hi = (%f)+I*(%f)\n", H.real(), H.imag());
 		get<9>(x) += H;
 	}
 
@@ -152,7 +159,7 @@ void hamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 #include "zip.incl"
 	for_each_n(zip, N*L, hamiltonian_functor());
 
-	int_vector okeys(N);
+	int_vector okeys(N*L);
 	reduce_by_key(Hkeys.begin(), Hkeys.end(), Hi.begin(), okeys.begin(), H.begin());
 
 //	for (int k = 0; k < N; k++) {
@@ -212,7 +219,7 @@ void dynamicshamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 */
 
 	state_type Hi(N*L);
-	int_vector Hkeys(N * L);
+	int_vector Lmap(N * L);
 
 	state_type fci(N*L*(nmax+1)*L), fi(N*L*(nmax+1)*L);
 	double_vector U0i(N*L), dUi(N*L*L), Ji(N*L*L), mui(N*L), U0pi(N*L), Jpi(N*L*L);
@@ -241,22 +248,109 @@ void dynamicshamiltonian(state_type& fc, state_type& f, const double_vector& U0,
 		copy_n(make_permutation_iterator(norm1.begin(), perm.begin()), N*L, norm1i.begin()+i*N*L);
 		copy_n(make_permutation_iterator(norm2.begin(), perm.begin()), N*L, norm2i.begin()+i*N*L);
 		copy_n(make_permutation_iterator(norm3.begin(), perm.begin()), N*L, norm3i.begin()+i*N*L);
-		copy_n(make_counting_iterator(0), N, Hkeys.begin()+i*N);
+//		sequence(Lmap.begin()+i*N, Lmap.begin()+(i+1)*N, i, L);
+//		copy_n(make_counting_iterator(0), N, Hkeys.begin()+i*N);
 	}
+	for (int i = 0; i < N; i++) {
+		sequence(Lmap.begin()+i*L, Lmap.begin()+(i+1)*L, i, N);
+	}
+
+//	printf("U0 = ");
+//	for (int i = 0; i < U0.size(); i++) {
+//		printf("%f,", U0[i]);
+//	}
+//	printf("\n");
+//	printf("U0i = ");
+//	for(int i = 0; i < N*L; i++) {
+//		printf("%f,", U0i[i]);
+//	}
+//	printf("\n");
+//
+//	printf("Lmap = ");
+//	for (int i = 0; i < N*L; i++) {
+//	printf("%d,", Lmap[i]);
+//	}
+//	printf("\n");
+
+	int_vector Hkeys(N*L);
+	tabulate(Hkeys.begin(), Hkeys.end(), _1/L);
+//	printf("Hkeys = ");
+//	for (int i = 0; i < N*L; i++) {
+//	printf("%d,", Hkeys[i]);
+//	}
+//	printf("\n");
 
 #include "zip.incl"
 	fill(Hi.begin(), Hi.end(), 0);
 	for_each_n(zip, N*L, hamiltonian_functor());
 	state_type Ei(N*L);
-	copy(Hi.begin(), Hi.end(), Ei.begin());
+	gather(Lmap.begin(), Lmap.end(), Hi.begin(), Ei.begin());
+//	copy(Hi.begin(), Hi.end(), Ei.begin());
+//	printf("Ei = ");
+//	for (int i = 0; i < Ei.size(); i++) {
+//	printf("(%f)+I*(%f),", Ei[i].real(), Ei[i].imag());
+//	}
+//	printf("\n");
+//
+//	exit(0);
+//	printf("H = ");
+//	for (int i = 0; i < H.size(); i++) {
+//	printf("(%f)+I*(%f),", H[i].real(), H[i].imag());
+//	}
+//	printf("\n");
 
 	fill(Hi.begin(), Hi.end(), 0);
 	for_each_n(zip, N*L, canonical_functor());
 	state_type iSpi(N*L);
-	copy(Hi.begin(), Hi.end(), iSpi.begin());
+	gather(Lmap.begin(), Lmap.end(), Hi.begin(), iSpi.begin());
+//	copy(Hi.begin(), Hi.end(), iSpi.begin());
+//	printf("iSpi = ");
+//	for (int i = 0; i < N*L; i++) {
+//	printf("(%f)+I*(%f),", iSpi[i].real(), iSpi[i].imag());
+//	}
+//	printf("\n");
+//
+//	exit(0);
 
-	int_vector okeys(N);
+	int_vector okeys(N*L);
+//	printf("Ei.size() = %lu\n", Ei.size());
+//	for(int i = 0; i < H.size(); i++) {
+//		H[i] = 0;
+////		complex<double> Eii = 0;
+//		for (int j = 0; j < L; j++) {
+//			H[i] += Ei[j*N+i];
+//		}
+////		H[i] = Ei[i];
+//	}
+////	printf("H1 = ");
+//	for (int i = 0; i < H.size(); i++) {
+////	printf("(%f)+I*(%f),", H[i].real(), H[i].imag());
+//	}
+//	double qwe = H[0].real();
+//	double asd = H[0].imag();
+//	printf("%f,%f\n",qwe,asd);
+//	printf("%f,%f\n",H[0].real(),H[0].imag());
+//	printf("%f,%f,%f,%f\n",H[0].real(),H[0].imag(),H[1].real(),H[1].imag());
+//	printf("%f,%f,%f,%f,%f,%f\n",H[0].real(),H[0].imag(),H[1].real(),H[1].imag(),H[2].real(),H[2].imag());
+//	printf("\n");
+//	fill(H.begin(), H.end(), 0);
+//	int_vector okeys2(2*N*L);
+//	fill(okeys2.begin(), okeys2.end(), 100);
+//	state_type H2(N*L);
+//	fill(H2.begin(), H2.end(), 42.);
+
 	reduce_by_key(Hkeys.begin(), Hkeys.end(), Ei.begin(), okeys.begin(), H.begin());
+
+//	printf("H = ");
+//	for (int i = 0; i < H.size(); i++) {
+//	printf("(%f)+I*(%f),", H[i].real(), H[i].imag());
+//	}
+//	printf("\n");
+//	printf("okeys = ");
+//	for (int i = 0; i < okeys2.size(); i++) {
+//	printf("%d,", okeys2[i]);
+//	}
+//	printf("\n");
 	reduce_by_key(Hkeys.begin(), Hkeys.end(), iSpi.begin(), okeys.begin(), iSp.begin());
 
 	constant_iterator<complex<double>> I(complex<double>(0,1));

@@ -489,6 +489,19 @@ double energy::value(const vector<double>& x) {
 	hamiltonian(fc, f, U0v, dUv, Jv, muv, norm1, norm2, norm3, U0p, Jp, H);
 
 	host_vector<complex<double>> Hh = H;
+//	cout << "Start" << endl;
+//	cout << "U0 = " << U0 << endl;
+//	thrust::copy(U0v.begin(), U0v.end(), ostream_iterator<complex<double>>(cout,","));
+//	cout << endl;
+//	thrust::copy(dUv.begin(), dUv.end(), ostream_iterator<complex<double>>(cout,","));
+//	cout << endl;
+//	thrust::copy(Jv.begin(), Jv.end(), ostream_iterator<complex<double>>(cout,","));
+//	cout << endl;
+//	thrust::copy(U0p.begin(), U0p.end(), ostream_iterator<complex<double>>(cout,","));
+//	cout << endl;
+//	thrust::copy(Jp.begin(), Jp.end(), ostream_iterator<complex<double>>(cout,","));
+//	cout << endl;
+//	cout << Hh[0] << endl;
 	return Hh[0].real() / norm0h[0].real();
 }
 
